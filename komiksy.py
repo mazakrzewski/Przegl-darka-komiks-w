@@ -4,7 +4,7 @@
 import gi
 # wymagamy biblioteki w wersji min 3.0
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk , GdkPixbuf
 import urllib
 import urllib2
 from bs4 import BeautifulSoup
@@ -21,15 +21,19 @@ class Komix(Gtk.Window):
         soup = BeautifulSoup(url, 'html.parser')
         self.window.set_title(soup.find(id='ctitle').get_text() + " nr " + str(self.aktualny_numer_komix))
         self.image.set_from_file(str(self.aktualny_numer_komix) + '.jpg')
-        # jesli nie ma komiksu na dysku pobiesz go
-        if str(self.image.get_storage_type()) == "<enum GTK_IMAGE_ICON_NAME of type GtkImageType>":
+
+        try:
+            x=GdkPixbuf.Pixbuf.new_from_file(str(self.aktualny_numer_komix) + '.jpg')
+            self.image.set_from_pixbuf(x)
+            print "komiks byl na dysku"
+        except:
+            # jesli nie ma komiksu na dysku pobiesz go
             try:
                 urllib.urlretrieve("http:" + soup.find(id='comic').img['src'],
                                    str(self.aktualny_numer_komix) + ".jpg")
-                print self.aktualny_numer_komix
                 self.image.set_from_file(str(self.aktualny_numer_komix) + '.jpg')
             except:
-                pass
+                print "problem z pobraniem komisku"
 
     def najstarszy_komix(self, btn):
         """Przejscie do najstarszyego komiksu."""
@@ -44,13 +48,14 @@ class Komix(Gtk.Window):
             if self.aktualny_numer_komix == 404:
                 self.aktualny_numer_komix -= 1
             self.otwoz_komix()
+        else:
+            print "to jest najstarszy komiks"
 
     def losowy_komix(self, btn):
         """Przejscie do losowego komiksu."""
-        print type(self.max_numer_komix)
-        self.aktualny_numer_komix = random.randint(1, int(self.max_numer_komix))
-        while (self.aktualny_numer_komix == 404):
-            self.aktualny_numer_komix
+        self.aktualny_numer_komix = random.randint(1, self.max_numer_komix)
+        if (self.aktualny_numer_komix == 404):
+            self.aktualny_numer_komix = 403
         self.otwoz_komix()
 
     def nastepny_komix(self, btn):
@@ -61,6 +66,8 @@ class Komix(Gtk.Window):
             if self.aktualny_numer_komix == 404:
                 self.aktualny_numer_komix += 1
             self.otwoz_komix()
+        else:
+            print "to jest najnowszy komiks"
 
     def najnowszy_komix(self, btn):
         """Przejscie do najnowszego komiksu."""
@@ -69,10 +76,15 @@ class Komix(Gtk.Window):
 
     def wybrany_komix(self, btn):
         """Przejscie_do_wybranego_komiksu."""
-        k = int(self.pole_text.get_text())
-        if 0 <= k and k <= self.max_numer_komix and k != 404:
-            self.aktualny_numer_komix = k
-            self.otwoz_komix()
+        try:
+            k = int(self.pole_text.get_text())
+            if 0 <= k and k <= self.max_numer_komix and k != 404:
+                self.aktualny_numer_komix = k
+                self.otwoz_komix()
+            else:
+                print "komiks nr. " + self.pole_text.get_text() + " nie istnieje"
+        except:
+            print "\"" + self.pole_text.get_text() + "\"" + " nie jest liczba"
 
     def __init__(self):
         """Inicjuje powstanie planszy. """
